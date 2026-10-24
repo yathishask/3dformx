@@ -123,30 +123,17 @@ export const Navbar: React.FC = () => {
             Track Orders
           </Link>
 
-          {/* Social Links */}
+          {/* Social & Contact Links - Instagram & WhatsApp */}
           <div className="flex items-center gap-3.5 text-white">
-            {/* Facebook */}
             <a
-              href="https://facebook.com"
+              href="https://www.instagram.com/3dformx/"
               target="_blank"
               rel="noreferrer"
-              aria-label="Facebook"
-              className="hover:text-brand-orange transition-colors"
-            >
-              <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
-                <path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z" />
-              </svg>
-            </a>
-            {/* Instagram */}
-            <a
-              href="https://instagram.com"
-              target="_blank"
-              rel="noreferrer"
-              aria-label="Instagram"
-              className="hover:text-brand-orange transition-colors"
+              aria-label="Follow 3D FormX on Instagram"
+              className="flex items-center gap-1.5 hover:text-brand-orange transition-colors group"
             >
               <svg
-                className="w-3.5 h-3.5 stroke-current fill-none"
+                className="w-3.5 h-3.5 stroke-current fill-none group-hover:scale-110 transition-transform"
                 strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -156,31 +143,29 @@ export const Navbar: React.FC = () => {
                 <path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z" />
                 <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
               </svg>
+              <span className="hidden sm:inline text-[11px] font-medium text-slate-300 group-hover:text-brand-orange transition-colors">
+                @3dformx
+              </span>
             </a>
-            {/* YouTube */}
+
+            <span className="w-px h-3 bg-white/20" />
+
             <a
-              href="https://youtube.com"
+              href="https://wa.me/916363204351"
               target="_blank"
               rel="noreferrer"
-              aria-label="YouTube"
-              className="hover:text-brand-orange transition-colors"
+              aria-label="Chat with 3D FormX on WhatsApp"
+              className="flex items-center gap-1.5 hover:text-emerald-400 transition-colors group"
             >
-              <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
-                <path d="M22.54 6.42a2.78 2.78 0 00-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 00-1.94 2A29 29 0 001 11.75a29 29 0 00.46 5.33A2.78 2.78 0 003.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 001.94-2 29 29 0 00.46-5.25 29 29 0 00-.46-5.33zM9.75 15.02V8.48l5.75 3.27-5.75 3.27z" />
+              <svg
+                className="w-3.5 h-3.5 fill-current text-emerald-400 group-hover:scale-110 transition-transform"
+                viewBox="0 0 24 24"
+              >
+                <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/>
               </svg>
-            </a>
-            {/* LinkedIn */}
-            <a
-              href="https://linkedin.com"
-              target="_blank"
-              rel="noreferrer"
-              aria-label="LinkedIn"
-              className="hover:text-brand-orange transition-colors"
-            >
-              <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
-                <path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6zM2 9h4v12H2z" />
-                <circle cx="4" cy="4" r="2" />
-              </svg>
+              <span className="hidden sm:inline text-[11px] font-medium text-slate-300 group-hover:text-emerald-400 transition-colors">
+                WhatsApp
+              </span>
             </a>
           </div>
         </div>
@@ -205,7 +190,7 @@ export const Navbar: React.FC = () => {
             {/* Left: Brand Logo */}
             <Link to="/" className="flex items-center flex-shrink-0 group">
               <img
-                src="/images/logo-transparent.png"
+                src="/images/logo.png"
                 alt="3D FormX"
                 className="h-9 sm:h-11 w-auto object-contain transition-transform duration-300 group-hover:scale-105 drop-shadow-md"
               />

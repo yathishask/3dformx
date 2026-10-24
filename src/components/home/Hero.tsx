@@ -174,19 +174,19 @@ export const Hero: React.FC = () => {
           <div
             key={slide.id}
             onClick={() => handleSlideClick(slide.ctaLink)}
-            className={`absolute inset-0 transition-opacity duration-1000 ease-in-out cursor-pointer ${
+            className={`absolute inset-0 bg-black flex items-center justify-center transition-opacity duration-1000 ease-in-out cursor-pointer ${
               isActive ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'
             }`}
           >
-            {/* Full-bleed Background Image with subtle zoom animation when active */}
-            <img
-              src={slide.image}
-              alt={slide.title || '3D FormX Banner'}
-              draggable={false}
-              className={`w-full h-full object-cover object-center transition-transform duration-[6000ms] ease-out ${
-                isActive ? 'scale-105' : 'scale-100'
-              }`}
-            />
+            {/* Fit-to-screen Banner Image with solid black screen on uncovered space */}
+            <div className="absolute inset-0 bg-black flex items-center justify-center overflow-hidden">
+              <img
+                src={slide.image}
+                alt={slide.title || '3D FormX Banner'}
+                draggable={false}
+                className="w-full h-full object-contain object-center"
+              />
+            </div>
 
             {hasBoxContent ? (
               <>

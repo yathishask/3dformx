@@ -16,6 +16,7 @@ export interface CreateOrderParams {
   postalCode: string;
   notes?: string;
   paymentMethod: string;
+  paymentId?: string;
   subtotal: number;
   shippingFee: number;
   totalAmount: number;
@@ -97,11 +98,13 @@ export const orderService = {
           user_id: params.userId || null,
           address_id: addressId,
           status: 'pending',
-          payment_status: params.paymentMethod === 'cod' ? 'pending' : 'paid',
+          payment_status: 'paid',
+          payment_id: params.paymentId || null,
+          payment_method: params.paymentMethod || 'razorpay',
           subtotal: params.subtotal,
           shipping_fee: params.shippingFee,
           total_amount: params.totalAmount,
-          customer_notes: `Contact: ${params.customerName} (${params.phone}, ${params.email}). Address: ${fullAddressSummary}. Payment: ${params.paymentMethod.toUpperCase()}.${params.notes ? ' Notes: ' + params.notes : ''}`,
+          customer_notes: `Contact: ${params.customerName} (${params.phone}, ${params.email}). Address: ${fullAddressSummary}. Payment: ${params.paymentMethod.toUpperCase()}${params.paymentId ? ` [Razorpay ID: ${params.paymentId}]` : ''}.${params.notes ? ' Notes: ' + params.notes : ''}`,
         })
         .select('id')
         .single();

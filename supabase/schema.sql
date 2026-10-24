@@ -163,6 +163,8 @@ CREATE TABLE IF NOT EXISTS public.orders (
     address_id UUID REFERENCES public.addresses(id) ON DELETE SET NULL,
     status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'shipped', 'delivered', 'cancelled')),
     payment_status TEXT NOT NULL DEFAULT 'pending' CHECK (payment_status IN ('pending', 'paid', 'failed')),
+    payment_id TEXT,
+    payment_method TEXT DEFAULT 'razorpay',
     subtotal NUMERIC(12, 2) NOT NULL DEFAULT 0,
     shipping_fee NUMERIC(12, 2) NOT NULL DEFAULT 0,
     total_amount NUMERIC(12, 2) NOT NULL DEFAULT 0,

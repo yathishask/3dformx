@@ -462,6 +462,14 @@ export const OrdersPage: React.FC = () => {
                                   : formatPrice(Number(order.shipping_fee))}
                               </span>
                             </div>
+                            {order.payment_id && (
+                              <div className="flex justify-between items-center text-slate-400">
+                                <span>Payment Ref</span>
+                                <span className="font-mono text-[11px] text-emerald-400 font-semibold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                                  {order.payment_id}
+                                </span>
+                              </div>
+                            )}
                             <div className="flex justify-between pt-2 border-t border-slate-800 text-sm font-bold">
                               <span className="text-white">Total Paid</span>
                               <span className="font-mono text-brand-orange text-base">

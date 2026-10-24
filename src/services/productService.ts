@@ -3,7 +3,7 @@ import { Product } from '../types';
 import { Category, HeroSlideRow } from '../types/database';
 import { HeroSlide } from '../data/heroSlides';
 
-const PLACEHOLDER_IMAGE = '/images/logo-transparent.png';
+const PLACEHOLDER_IMAGE = '/images/logo.png';
 
 function mapRowToProduct(row: any): Product {
   // Sort product_images with primary image first, then by display_order

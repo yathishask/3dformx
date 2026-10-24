@@ -37,7 +37,7 @@ export const Footer: React.FC = () => {
           <div className="lg:col-span-2 flex flex-col gap-4">
             <Link to="/" className="inline-block">
               <img
-                src="/images/logo-transparent.png"
+                src="/images/logo.png"
                 alt="3D FormX"
                 className="h-10 w-auto object-contain"
               />
@@ -48,16 +48,24 @@ export const Footer: React.FC = () => {
             <div className="flex flex-col gap-2 text-xs text-slate-400 mt-2">
               <span className="flex items-center gap-2">
                 <MapPin size={14} className="text-brand-orange flex-shrink-0" />
-                Peenya Industrial Area, Phase 1, Bengaluru, Karnataka - 560058
+                Siddharthnagar, Mysore - 570029, Karnataka
               </span>
-              <span className="flex items-center gap-2">
+              <a
+                href="https://wa.me/916363204351"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 hover:text-white transition-colors"
+              >
                 <Phone size={14} className="text-brand-orange flex-shrink-0" />
-                1800-334-3676 (India Toll-Free)
-              </span>
-              <span className="flex items-center gap-2">
+                +91 6363204351
+              </a>
+              <a
+                href="mailto:support@3dformx.in"
+                className="flex items-center gap-2 hover:text-white transition-colors"
+              >
                 <Mail size={14} className="text-brand-orange flex-shrink-0" />
                 support@3dformx.in
-              </span>
+              </a>
             </div>
           </div>
 
@@ -108,7 +116,7 @@ export const Footer: React.FC = () => {
               </li>
               <li>
                 <span className="text-slate-500 cursor-not-allowed">
-                  18% GST Compliance
+                  Quality Guaranteed
                 </span>
               </li>
             </ul>
@@ -152,7 +160,7 @@ export const Footer: React.FC = () => {
 
         {/* Bottom Bar */}
         <div className="pt-8 border-t border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
-          <p>© {new Date().getFullYear()} 3D FormX India Private Limited. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} 3D FormX. All rights reserved.</p>
           <div className="flex items-center gap-3">
             <span className="flex items-center gap-1.5 text-slate-400">
               <ShieldCheck size={14} className="text-brand-orange" />

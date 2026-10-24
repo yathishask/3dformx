@@ -34,7 +34,7 @@ export const AboutPage: React.FC = () => {
                 Today, our flagship <strong className="text-white">Apex-7 CoreXY</strong> machines, <strong className="text-white">AeroCarbon™ PEEK</strong> spools, and <strong className="text-white">Phantasm 8K</strong> SLA systems power prototyping divisions at leading aerospace labs, automotive tier-1 suppliers, robotics ventures, and dental clinics throughout India.
               </p>
               <p>
-                Every unit sold is backed by our central Bengaluru testing facility, ensuring immediate local spare part availability, doorstep engineer support, and certified 18% GST invoicing for corporate input tax credits.
+                Every unit sold is backed by our dedicated testing facility, ensuring immediate local spare part availability, doorstep technical support, and authentic product certification.
               </p>
             </div>
 
@@ -116,15 +116,27 @@ export const AboutPage: React.FC = () => {
               <div className="space-y-3 text-sm text-slate-300">
                 <div className="flex items-start gap-3">
                   <MapPin size={18} className="text-brand-orange mt-0.5 flex-shrink-0" />
-                  <span>Phase 1, Peenya Industrial Area, Bengaluru, Karnataka - 560058</span>
+                  <span>Siddharthnagar, Mysore - 570029, Karnataka</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <Phone size={18} className="text-brand-orange flex-shrink-0" />
-                  <span>1800-334-3676 (India Toll-Free) / +91 80 4920 1842</span>
+                  <a
+                    href="https://wa.me/916363204351"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-white transition-colors"
+                  >
+                    +91 6363204351
+                  </a>
                 </div>
                 <div className="flex items-center gap-3">
                   <Mail size={18} className="text-brand-orange flex-shrink-0" />
-                  <span>india-sales@3dformx.com</span>
+                  <a
+                    href="mailto:support@3dformx.in"
+                    className="hover:text-white transition-colors"
+                  >
+                    support@3dformx.in
+                  </a>
                 </div>
                 <div className="flex items-center gap-3">
                   <Clock size={18} className="text-brand-orange flex-shrink-0" />
@@ -141,7 +153,7 @@ export const AboutPage: React.FC = () => {
                 We provide pilot batch deployment, on-site staff training, and custom pricing for 5+ machines.
               </p>
               <a
-                href="mailto:india-sales@3dformx.com"
+                href="mailto:support@3dformx.in"
                 className="px-6 py-3 rounded-xl bg-brand-orange text-black font-extrabold text-xs uppercase tracking-wider hover:bg-brand-orange-hover transition-colors shadow-lg shadow-brand-orange/20"
               >
                 Request Enterprise Pricing

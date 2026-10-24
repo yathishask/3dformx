@@ -1,4 +1,10 @@
 import { OrderRow } from '../types/database';
+import {
+  INVOICE_LOGO_WIDTH,
+  INVOICE_LOGO_HEIGHT,
+  INVOICE_LOGO_RGB_B64,
+  INVOICE_LOGO_ALPHA_B64,
+} from './invoiceLogoData';
 
 // Helper to escape special PDF characters and restrict to standard printable ASCII
 function escapePdf(text: string): string {
@@ -11,14 +17,55 @@ function escapePdf(text: string): string {
     .trim();
 }
 
-function getByteLength(str: string): number {
-  return new TextEncoder().encode(str).length;
+/**
+ * Places text at absolute coordinates (x, y) using standard PDF Tm operator
+ */
+function addText(
+  stream: string[],
+  font: 'F1' | 'F2',
+  size: number,
+  rgb: string,
+  x: number,
+  y: number,
+  text: string
+): void {
+  const safe = escapePdf(text);
+  if (!safe) return;
+  stream.push(`BT /${font} ${size} Tf ${rgb} rg 1 0 0 1 ${x} ${y} Tm (${safe}) Tj ET`);
+}
+
+function base64ToUint8Array(base64: string): Uint8Array {
+  const binaryString = atob(base64);
+  const len = binaryString.length;
+  const bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+  return bytes;
+}
+
+function concatByteArrays(arrays: Uint8Array[]): Uint8Array {
+  let totalLength = 0;
+  for (const arr of arrays) {
+    totalLength += arr.length;
+  }
+  const result = new Uint8Array(totalLength);
+  let offset = 0;
+  for (const arr of arrays) {
+    result.set(arr, offset);
+    offset += arr.length;
+  }
+  return result;
+}
+
+function stringToBytes(str: string): Uint8Array {
+  return new TextEncoder().encode(str);
 }
 
 /**
- * Builds a standard PDF 1.4 Tax Invoice document string
+ * Builds a standard PDF 1.4 Tax Invoice document with embedded 3D FormX logo
  */
-export function generateInvoicePdfString(order: OrderRow): string {
+export function generateInvoicePdfBytes(order: OrderRow): Uint8Array {
   const stream: string[] = [];
 
   const orderDate = new Date(order.created_at).toLocaleDateString('en-IN', {
@@ -27,7 +74,7 @@ export function generateInvoicePdfString(order: OrderRow): string {
     year: 'numeric',
   });
 
-  // Top Dark Header Bar
+  // 1. Top Dark Header Bar
   stream.push('0.06 0.08 0.12 rg');
   stream.push('0 755 595.28 86.89 re f');
 
@@ -35,171 +82,82 @@ export function generateInvoicePdfString(order: OrderRow): string {
   stream.push('0.96 0.43 0.12 rg');
   stream.push('0 751 595.28 4 re f');
 
-  // Company Brand Name
-  stream.push('BT');
-  stream.push('/F2 22 Tf');
-  stream.push('1 1 1 rg');
-  stream.push('40 798 Td');
-  stream.push(`(${escapePdf('3D FORMX')}) Tj`);
-  stream.push('ET');
+  // 2. Embedded Company Logo (3D FormX from images/logo.png)
+  // Image placed at x=40, y=778 with width=150, height=40 (exact 3.75:1 aspect ratio)
+  stream.push('q');
+  stream.push('150 0 0 40 40 778 cm');
+  stream.push('/ImLogo Do');
+  stream.push('Q');
 
-  // Tagline
-  stream.push('BT');
-  stream.push('/F2 8.5 Tf');
-  stream.push('0.96 0.43 0.12 rg');
-  stream.push('40 784 Td');
-  stream.push(`(${escapePdf('PRECISION 3D PRINTING & ENGINEERING')}) Tj`);
-  stream.push('ET');
+  // 3. Right Title "TAX INVOICE" & Metadata
+  addText(stream, 'F2', 18, '1 1 1', 420, 804, 'TAX INVOICE');
+  addText(stream, 'F1', 9, '0.85 0.9 0.95', 380, 786, `Invoice No: INV-${order.order_number}`);
+  addText(stream, 'F1', 9, '0.85 0.9 0.95', 380, 770, `Order Date: ${orderDate}`);
 
-  // GST & Support
-  stream.push('BT');
-  stream.push('/F1 8 Tf');
-  stream.push('0.7 0.75 0.8 rg');
-  stream.push('40 770 Td');
-  stream.push(`(${escapePdf('GSTIN: 29AABCU9603R1ZX | support@3dformx.com')}) Tj`);
-  stream.push('ET');
-
-  // Right Title "TAX INVOICE"
-  stream.push('BT');
-  stream.push('/F2 18 Tf');
-  stream.push('1 1 1 rg');
-  stream.push('430 798 Td');
-  stream.push(`(${escapePdf('TAX INVOICE')}) Tj`);
-  stream.push('ET');
-
-  // Invoice & Order metadata
-  stream.push('BT');
-  stream.push('/F1 8.5 Tf');
-  stream.push('0.85 0.9 0.95 rg');
-  stream.push('405 783 Td');
-  stream.push(`(${escapePdf('Invoice No: INV-' + order.order_number)}) Tj`);
-  stream.push('ET');
-
-  stream.push('BT');
-  stream.push('/F1 8.5 Tf');
-  stream.push('0.85 0.9 0.95 rg');
-  stream.push('405 770 Td');
-  stream.push(`(${escapePdf('Order Date: ' + orderDate)}) Tj`);
-  stream.push('ET');
-
-  // Address Section
-  // Left: Seller Details
+  // 4. Address Section
+  // Left: Seller Details (Sold by 3D FormX, Siddharthnagar, Mysore - 570029)
   stream.push('0.96 0.97 0.98 rg');
-  stream.push('40 642 245 96 re f');
+  stream.push('40 636 245 102 re f');
   stream.push('0.85 0.87 0.9 RG');
   stream.push('0.8 w');
-  stream.push('40 642 245 96 re s');
+  stream.push('40 636 245 102 re s');
 
-  stream.push('BT');
-  stream.push('/F2 8.5 Tf');
-  stream.push('0.96 0.43 0.12 rg');
-  stream.push('50 724 Td');
-  stream.push(`(${escapePdf('SOLD BY / DISPATCHED FROM')}) Tj`);
-  stream.push('ET');
-
-  stream.push('BT');
-  stream.push('/F2 9.5 Tf');
-  stream.push('0.1 0.1 0.1 rg');
-  stream.push('50 709 Td');
-  stream.push(`(${escapePdf('3D FormX Technologies Pvt Ltd')}) Tj`);
-  stream.push('ET');
-
-  stream.push('BT');
-  stream.push('/F1 8 Tf');
-  stream.push('0.3 0.35 0.4 rg');
-  stream.push('50 695 Td');
-  stream.push(`(${escapePdf('Plot 42, Additive Prototyping Hub')}) Tj`);
-  stream.push('50 683 Td');
-  stream.push(`(${escapePdf('Peenya Industrial Area, Phase II')}) Tj`);
-  stream.push('50 671 Td');
-  stream.push(`(${escapePdf('Bengaluru, Karnataka - 560058')}) Tj`);
-  stream.push('50 657 Td');
-  stream.push(`(${escapePdf('Website: https://3dformx.com')}) Tj`);
-  stream.push('ET');
+  addText(stream, 'F2', 8.5, '0.96 0.43 0.12', 52, 722, 'SOLD BY / DISPATCHED FROM');
+  addText(stream, 'F2', 11, '0.1 0.1 0.1', 52, 706, '3D FormX');
+  addText(stream, 'F1', 8.5, '0.3 0.35 0.4', 52, 691, 'Siddharthnagar');
+  addText(stream, 'F1', 8.5, '0.3 0.35 0.4', 52, 678, 'Mysore - 570029, Karnataka');
+  addText(stream, 'F1', 8.5, '0.3 0.35 0.4', 52, 665, 'Website: www.3dformx.in');
+  addText(stream, 'F1', 8.5, '0.3 0.35 0.4', 52, 652, 'Support: support@3dformx.in');
 
   // Right: Customer Details
   stream.push('0.96 0.97 0.98 rg');
-  stream.push('310 642 245 96 re f');
+  stream.push('310 636 245 102 re f');
   stream.push('0.85 0.87 0.9 RG');
   stream.push('0.8 w');
-  stream.push('310 642 245 96 re s');
+  stream.push('310 636 245 102 re s');
 
-  stream.push('BT');
-  stream.push('/F2 8.5 Tf');
-  stream.push('0.96 0.43 0.12 rg');
-  stream.push('320 724 Td');
-  stream.push(`(${escapePdf('BILLED TO / SHIP TO')}) Tj`);
-  stream.push('ET');
-
+  addText(stream, 'F2', 8.5, '0.96 0.43 0.12', 322, 722, 'BILLED TO / SHIP TO');
   const customerName = order.address?.recipient_name || 'Valued Customer';
-  stream.push('BT');
-  stream.push('/F2 9.5 Tf');
-  stream.push('0.1 0.1 0.1 rg');
-  stream.push('320 709 Td');
-  stream.push(`(${escapePdf(customerName)}) Tj`);
-  stream.push('ET');
+  addText(stream, 'F2', 10, '0.1 0.1 0.1', 322, 706, customerName);
 
-  stream.push('BT');
-  stream.push('/F1 8 Tf');
-  stream.push('0.3 0.35 0.4 rg');
-  let custY = 695;
+  let custY = 691;
   if (order.address?.address_line1) {
-    stream.push(`320 ${custY} Td`);
-    stream.push(`(${escapePdf(order.address.address_line1)}) Tj`);
-    custY -= 12;
+    addText(stream, 'F1', 8.5, '0.3 0.35 0.4', 322, custY, order.address.address_line1);
+    custY -= 13;
   }
   if (order.address?.address_line2) {
-    stream.push(`320 ${custY} Td`);
-    stream.push(`(${escapePdf(order.address.address_line2)}) Tj`);
-    custY -= 12;
+    addText(stream, 'F1', 8.5, '0.3 0.35 0.4', 322, custY, order.address.address_line2);
+    custY -= 13;
   }
   if (order.address?.landmark) {
-    stream.push(`320 ${custY} Td`);
-    stream.push(`(${escapePdf('Landmark: ' + order.address.landmark)}) Tj`);
-    custY -= 12;
+    addText(stream, 'F1', 8.5, '0.3 0.35 0.4', 322, custY, 'Landmark: ' + order.address.landmark);
+    custY -= 13;
   }
   if (order.address?.city || order.address?.state) {
     const loc = `${order.address.city || ''}, ${order.address.state || ''} - ${order.address.postal_code || ''}`;
-    stream.push(`320 ${custY} Td`);
-    stream.push(`(${escapePdf(loc)}) Tj`);
-    custY -= 12;
+    addText(stream, 'F1', 8.5, '0.3 0.35 0.4', 322, custY, loc);
+    custY -= 13;
   }
   if (order.address?.phone) {
-    stream.push(`320 ${custY} Td`);
-    stream.push(`(${escapePdf('Phone: ' + order.address.phone)}) Tj`);
+    addText(stream, 'F1', 8.5, '0.3 0.35 0.4', 322, custY, 'Phone: +91 ' + order.address.phone);
   }
-  stream.push('ET');
 
-  // Items Table Header
+  // 5. Items Table Header
   stream.push('0.08 0.11 0.16 rg');
-  stream.push('40 612 515 22 re f');
+  stream.push('40 602 515 22 re f');
 
-  stream.push('BT');
-  stream.push('/F2 8.5 Tf');
-  stream.push('1 1 1 rg');
-  stream.push('50 619 Td');
-  stream.push(`(${escapePdf('#')}) Tj`);
-  stream.push('75 619 Td');
-  stream.push(`(${escapePdf('ITEM DESCRIPTION')}) Tj`);
-  stream.push('345 619 Td');
-  stream.push(`(${escapePdf('QTY')}) Tj`);
-  stream.push('400 619 Td');
-  stream.push(`(${escapePdf('UNIT PRICE')}) Tj`);
-  stream.push('480 619 Td');
-  stream.push(`(${escapePdf('TOTAL AMOUNT')}) Tj`);
-  stream.push('ET');
+  addText(stream, 'F2', 8.5, '1 1 1', 50, 609, '#');
+  addText(stream, 'F2', 8.5, '1 1 1', 75, 609, 'ITEM DESCRIPTION');
+  addText(stream, 'F2', 8.5, '1 1 1', 345, 609, 'QTY');
+  addText(stream, 'F2', 8.5, '1 1 1', 400, 609, 'UNIT PRICE');
+  addText(stream, 'F2', 8.5, '1 1 1', 480, 609, 'TOTAL AMOUNT');
 
-  // Items Table Rows
+  // 6. Items Table Rows
   const items = order.order_items || [];
-  let itemY = 590;
+  let itemY = 578;
 
   if (items.length === 0) {
-    stream.push('BT');
-    stream.push('/F1 8.5 Tf');
-    stream.push('0.4 0.45 0.5 rg');
-    stream.push(`50 ${itemY} Td`);
-    stream.push(`(${escapePdf('Order items recorded with order reference #' + order.order_number)}) Tj`);
-    stream.push('ET');
+    addText(stream, 'F1', 8.5, '0.4 0.45 0.5', 50, itemY, 'Order items recorded with order reference #' + order.order_number);
     itemY -= 22;
   } else {
     items.forEach((item, index) => {
@@ -215,223 +173,206 @@ export function generateInvoicePdfString(order: OrderRow): string {
       stream.push(`40 ${itemY - 6} m 555 ${itemY - 6} l s`);
 
       // Index
-      stream.push('BT');
-      stream.push('/F1 8.5 Tf');
-      stream.push('0.3 0.35 0.4 rg');
-      stream.push(`50 ${itemY} Td`);
-      stream.push(`(${escapePdf(String(index + 1))}) Tj`);
-      stream.push('ET');
+      addText(stream, 'F1', 8.5, '0.3 0.35 0.4', 50, itemY, String(index + 1));
 
       // Product Name
-      stream.push('BT');
-      stream.push('/F2 8.5 Tf');
-      stream.push('0.1 0.1 0.1 rg');
-      stream.push(`75 ${itemY} Td`);
       const rawName = item.product_name || 'Custom 3D Print Item';
       const truncated = rawName.length > 44 ? rawName.slice(0, 41) + '...' : rawName;
-      stream.push(`(${escapePdf(truncated)}) Tj`);
-      stream.push('ET');
+      addText(stream, 'F2', 8.5, '0.1 0.1 0.1', 75, itemY, truncated);
 
       // Quantity
-      stream.push('BT');
-      stream.push('/F1 8.5 Tf');
-      stream.push('0.2 0.25 0.3 rg');
-      stream.push(`353 ${itemY} Td`);
-      stream.push(`(${escapePdf(String(item.quantity))}) Tj`);
-      stream.push('ET');
+      addText(stream, 'F1', 8.5, '0.2 0.25 0.3', 353, itemY, String(item.quantity));
 
       // Unit Price
-      stream.push('BT');
-      stream.push('/F1 8.5 Tf');
-      stream.push('0.2 0.25 0.3 rg');
-      stream.push(`400 ${itemY} Td`);
-      stream.push(`(${escapePdf('Rs. ' + Number(item.unit_price).toFixed(2))}) Tj`);
-      stream.push('ET');
+      addText(stream, 'F1', 8.5, '0.2 0.25 0.3', 400, itemY, 'Rs. ' + Number(item.unit_price).toFixed(2));
 
       // Line Total
-      stream.push('BT');
-      stream.push('/F2 8.5 Tf');
-      stream.push('0.1 0.1 0.1 rg');
-      stream.push(`480 ${itemY} Td`);
-      stream.push(`(${escapePdf('Rs. ' + Number(item.line_total).toFixed(2))}) Tj`);
-      stream.push('ET');
+      addText(stream, 'F2', 8.5, '0.1 0.1 0.1', 480, itemY, 'Rs. ' + Number(item.line_total).toFixed(2));
 
       itemY -= 22;
     });
   }
 
-  // Totals Section
-  const totalsY = Math.min(itemY - 15, 490);
+  // 7. Totals & Payment Section
+  const totalsY = Math.min(itemY - 15, 480);
 
-  // Left Status Box
+  // Accurately compute subtotal, delivery fee, and total amount
+  const total = Number(order.total_amount || 0);
+  let shipping = Number(order.shipping_fee || 0);
+  let subtotal = Number(order.subtotal || 0);
+
+  // Fallback calculation in case database fields were null/zero
+  if (subtotal === 0 && items.length > 0) {
+    subtotal = items.reduce((sum, it) => sum + Number(it.line_total || 0), 0);
+  }
+  if (subtotal === 0) {
+    subtotal = total - shipping;
+  }
+  if (shipping === 0 && subtotal > 0 && total > subtotal) {
+    shipping = Number((total - subtotal).toFixed(2));
+  }
+
+  // Left Status Box (Payment & Delivery Fulfillment)
   stream.push('0.96 0.97 0.98 rg');
-  stream.push(`40 ${totalsY - 72} 245 76 re f`);
+  stream.push(`40 ${totalsY - 82} 245 86 re f`);
   stream.push('0.85 0.88 0.9 RG');
   stream.push('0.5 w');
-  stream.push(`40 ${totalsY - 72} 245 76 re s`);
+  stream.push(`40 ${totalsY - 82} 245 86 re s`);
 
-  stream.push('BT');
-  stream.push('/F2 8 Tf');
-  stream.push('0.96 0.43 0.12 rg');
-  stream.push(`50 ${totalsY - 14} Td`);
-  stream.push(`(${escapePdf('PAYMENT & FULFILMENT')}) Tj`);
-  stream.push('ET');
+  addText(stream, 'F2', 8.5, '0.96 0.43 0.12', 50, totalsY - 18, 'PAYMENT & FULFILLMENT STATUS');
+  const paymentMethodLabel = order.payment_method ? order.payment_method.toUpperCase() : 'RAZORPAY';
+  addText(stream, 'F1', 8, '0.3 0.35 0.4', 50, totalsY - 32, 'Payment Mode: Online via ' + paymentMethodLabel);
 
-  stream.push('BT');
-  stream.push('/F1 8 Tf');
-  stream.push('0.3 0.35 0.4 rg');
-  stream.push(`50 ${totalsY - 28} Td`);
-  stream.push(`(${escapePdf('Payment Method: Prepaid Online / UPI / Card')}) Tj`);
-  stream.push(`50 ${totalsY - 41} Td`);
-  stream.push(`(${escapePdf('Payment Status: ' + (order.payment_status || 'PAID').toUpperCase())}) Tj`);
-  stream.push(`50 ${totalsY - 54} Td`);
-  stream.push(`(${escapePdf('Order Status: ' + (order.status || 'PROCESSING').toUpperCase())}) Tj`);
-  stream.push(`50 ${totalsY - 67} Td`);
-  stream.push(`(${escapePdf('Standard B2C / B2B Tax invoice')}) Tj`);
-  stream.push('ET');
+  if (order.payment_id) {
+    addText(stream, 'F1', 8, '0.3 0.35 0.4', 50, totalsY - 44, 'Payment Ref ID: ' + order.payment_id);
+  }
 
-  // Right Totals Box
+  addText(stream, 'F1', 8, '0.3 0.35 0.4', 50, totalsY - (order.payment_id ? 56 : 46), 'Payment Status: ' + (order.payment_status || 'PAID').toUpperCase());
+
+  const deliveryFeeLabel = shipping === 0 ? 'FREE' : 'Rs. ' + shipping.toFixed(2);
+  addText(stream, 'F2', 8.5, '0.1 0.6 0.3', 50, totalsY - (order.payment_id ? 68 : 58), 'Delivery Fee: ' + deliveryFeeLabel);
+
+  // Right Totals Box (Subtotal + Delivery Charges + Total Paid)
   stream.push('0.97 0.98 0.99 rg');
-  stream.push(`310 ${totalsY - 72} 245 76 re f`);
+  stream.push(`310 ${totalsY - 82} 245 86 re f`);
   stream.push('0.85 0.88 0.9 RG');
   stream.push('0.5 w');
-  stream.push(`310 ${totalsY - 72} 245 76 re s`);
-
-  const subtotal = Number(order.subtotal || order.total_amount);
-  const shipping = Number(order.shipping_fee || 0);
-  const total = Number(order.total_amount);
+  stream.push(`310 ${totalsY - 82} 245 86 re s`);
 
   // Subtotal
-  stream.push('BT');
-  stream.push('/F1 8.5 Tf');
-  stream.push('0.3 0.35 0.4 rg');
-  stream.push(`325 ${totalsY - 18} Td`);
-  stream.push(`(${escapePdf('Items Subtotal:')}) Tj`);
-  stream.push(`470 ${totalsY - 18} Td`);
-  stream.push(`(${escapePdf('Rs. ' + subtotal.toFixed(2))}) Tj`);
-  stream.push('ET');
+  addText(stream, 'F1', 8.5, '0.3 0.35 0.4', 325, totalsY - 18, 'Items Subtotal:');
+  addText(stream, 'F2', 8.5, '0.1 0.1 0.1', 460, totalsY - 18, 'Rs. ' + subtotal.toFixed(2));
 
-  // Shipping
-  stream.push('BT');
-  stream.push('/F1 8.5 Tf');
-  stream.push('0.3 0.35 0.4 rg');
-  stream.push(`325 ${totalsY - 33} Td`);
-  stream.push(`(${escapePdf('Shipping Charges:')}) Tj`);
-  stream.push(`470 ${totalsY - 33} Td`);
-  stream.push(`(${escapePdf(shipping === 0 ? 'FREE' : 'Rs. ' + shipping.toFixed(2))}) Tj`);
-  stream.push('ET');
+  // Delivery / Shipping Charges (Explicitly highlighted with exact delivery fee)
+  addText(stream, 'F2', 8.5, '0.1 0.1 0.1', 325, totalsY - 34, 'Delivery Fee:');
+  if (shipping === 0) {
+    addText(stream, 'F2', 9, '0.1 0.6 0.3', 460, totalsY - 34, 'FREE');
+  } else {
+    addText(stream, 'F2', 9, '0.96 0.43 0.12', 460, totalsY - 34, 'Rs. ' + shipping.toFixed(2));
+  }
 
   // Total Accent Line
   stream.push('0.96 0.43 0.12 RG');
   stream.push('1 w');
-  stream.push(`320 ${totalsY - 43} m 545 ${totalsY - 43} l s`);
+  stream.push(`320 ${totalsY - 48} m 545 ${totalsY - 48} l s`);
 
   // Total Paid
-  stream.push('BT');
-  stream.push('/F2 10 Tf');
-  stream.push('0.06 0.08 0.12 rg');
-  stream.push(`325 ${totalsY - 60} Td`);
-  stream.push(`(${escapePdf('Total Paid:')}) Tj`);
-  stream.push('/F2 10.5 Tf');
-  stream.push('0.96 0.43 0.12 rg');
-  stream.push(`460 ${totalsY - 60} Td`);
-  stream.push(`(${escapePdf('Rs. ' + total.toFixed(2))}) Tj`);
-  stream.push('ET');
+  addText(stream, 'F2', 10, '0.06 0.08 0.12', 325, totalsY - 68, 'Total Amount Paid:');
+  addText(stream, 'F2', 11.5, '0.96 0.43 0.12', 450, totalsY - 68, 'Rs. ' + total.toFixed(2));
 
-  // Footer Disclaimer & Brand info
+  // 8. Footer Section
   stream.push('0.85 0.88 0.9 RG');
   stream.push('0.5 w');
   stream.push('40 75 m 555 75 l s');
 
-  stream.push('BT');
-  stream.push('/F1 7.5 Tf');
-  stream.push('0.4 0.45 0.5 rg');
-  stream.push('40 60 Td');
-  stream.push(`(${escapePdf('Note: This is an authentic, computer-generated tax invoice and requires no physical signature.')}) Tj`);
-  stream.push('40 48 Td');
-  stream.push(`(${escapePdf('For inquiries, warranty support, or custom model assistance, contact support@3dformx.com.')}) Tj`);
-  stream.push('ET');
+  addText(stream, 'F1', 7.5, '0.4 0.45 0.5', 40, 60, 'Note: This is an authentic, computer-generated invoice and requires no physical signature.');
+  addText(stream, 'F1', 7.5, '0.4 0.45 0.5', 40, 48, 'For custom 3D printing orders, shipping inquiries, or support, visit www.3dformx.in or email support@3dformx.in');
+  addText(stream, 'F2', 8, '0.96 0.43 0.12', 40, 34, '3D FormX | Siddharthnagar, Mysore - 570029 | www.3dformx.in');
 
-  stream.push('BT');
-  stream.push('/F2 8 Tf');
-  stream.push('0.96 0.43 0.12 rg');
-  stream.push('40 34 Td');
-  stream.push(`(${escapePdf('3D FormX Technologies | Precision Additive Manufacturing | www.3dformx.com')}) Tj`);
-  stream.push('ET');
+  const contentStr = stream.join('\n');
+  const contentBytes = stringToBytes(contentStr);
 
-  const contentStream = stream.join('\n');
-  const streamLength = getByteLength(contentStream);
+  const rgbBytes = base64ToUint8Array(INVOICE_LOGO_RGB_B64);
+  const alphaBytes = base64ToUint8Array(INVOICE_LOGO_ALPHA_B64);
 
   // PDF Objects
-  const objects: string[] = [];
+  const objects: Uint8Array[] = [];
 
   // Object 1: Catalog
-  objects.push('1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj');
+  objects.push(stringToBytes('1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n'));
 
   // Object 2: Pages
-  objects.push('2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj');
+  objects.push(stringToBytes('2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n'));
 
-  // Object 3: Page
+  // Object 3: Page (with /ImLogo XObject resource)
   objects.push(
-    '3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Contents 4 0 R /Resources << /Font << /F1 5 0 R /F2 6 0 R >> >> >>\nendobj'
+    stringToBytes(
+      '3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Contents 4 0 R /Resources << /Font << /F1 5 0 R /F2 6 0 R >> /XObject << /ImLogo 7 0 R >> >> >>\nendobj\n'
+    )
   );
 
   // Object 4: Contents Stream
   objects.push(
-    `4 0 obj\n<< /Length ${streamLength} >>\nstream\n${contentStream}\nendstream\nendobj`
+    concatByteArrays([
+      stringToBytes(`4 0 obj\n<< /Length ${contentBytes.length} >>\nstream\n`),
+      contentBytes,
+      stringToBytes('\nendstream\nendobj\n'),
+    ])
   );
 
-  // Object 5: Helvetica Normal
+  // Object 5: Font Helvetica
   objects.push(
-    '5 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>\nendobj'
+    stringToBytes(
+      '5 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>\nendobj\n'
+    )
   );
 
-  // Object 6: Helvetica Bold
+  // Object 6: Font Helvetica-Bold
   objects.push(
-    '6 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>\nendobj'
+    stringToBytes(
+      '6 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>\nendobj\n'
+    )
   );
 
-  let output = '%PDF-1.4\n';
-  const offsets: number[] = [];
+  // Object 7: Image XObject /ImLogo with /SMask 8 0 R
+  objects.push(
+    concatByteArrays([
+      stringToBytes(
+        `7 0 obj\n<< /Type /XObject /Subtype /Image /Width ${INVOICE_LOGO_WIDTH} /Height ${INVOICE_LOGO_HEIGHT} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /FlateDecode /SMask 8 0 R /Length ${rgbBytes.length} >>\nstream\n`
+      ),
+      rgbBytes,
+      stringToBytes('\nendstream\nendobj\n'),
+    ])
+  );
 
-  for (let i = 0; i < objects.length; i++) {
-    offsets.push(getByteLength(output));
-    output += objects[i] + '\n';
+  // Object 8: Soft Mask (Alpha Transparency channel)
+  objects.push(
+    concatByteArrays([
+      stringToBytes(
+        `8 0 obj\n<< /Type /XObject /Subtype /Image /Width ${INVOICE_LOGO_WIDTH} /Height ${INVOICE_LOGO_HEIGHT} /ColorSpace /DeviceGray /BitsPerComponent 8 /Filter /FlateDecode /Length ${alphaBytes.length} >>\nstream\n`
+      ),
+      alphaBytes,
+      stringToBytes('\nendstream\nendobj\n'),
+    ])
+  );
+
+  // Assemble PDF with exact cross-reference table (xref)
+  const header = stringToBytes('%PDF-1.4\n%\xE2\xE3\xCF\xD3\n');
+  const offsets: number[] = [0]; // Object 0 is free
+  let currentOffset = header.length;
+
+  for (const obj of objects) {
+    offsets.push(currentOffset);
+    currentOffset += obj.length;
   }
 
-  const startXref = getByteLength(output);
-  output += `xref\n0 ${objects.length + 1}\n`;
-  output += '0000000000 65535 f \n';
-
-  for (const offset of offsets) {
-    const padded = String(offset).padStart(10, '0');
-    output += `${padded} 00000 n \n`;
+  const xrefOffset = currentOffset;
+  let xref = `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
+  for (let i = 1; i <= objects.length; i++) {
+    xref += String(offsets[i]).padStart(10, '0') + ' 00000 n \n';
   }
 
-  output += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${startXref}\n%%EOF\n`;
+  const trailer = `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF\n`;
 
-  return output;
+  return concatByteArrays([header, ...objects, stringToBytes(xref), stringToBytes(trailer)]);
 }
 
 /**
- * Triggers an instant download of the PDF invoice in the user's browser
+ * Initiates direct browser file download for the invoice PDF
  */
 export function downloadInvoicePdf(order: OrderRow) {
   try {
-    const pdfData = generateInvoicePdfString(order);
-    const blob = new Blob([pdfData], { type: 'application/pdf' });
+    const pdfBytes = generateInvoicePdfBytes(order);
+    const blob = new Blob([pdfBytes], { type: 'application/pdf' });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `3DFormX-Invoice-${order.order_number}.pdf`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(() => {
-      URL.revokeObjectURL(url);
-    }, 1500);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `Invoice_${order.order_number || '3DFormX'}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
   } catch (error) {
-    console.error('Error generating or downloading invoice PDF:', error);
-    alert('Unable to generate invoice at this moment. Please try again.');
+    console.error('[InvoicePdf] Failed to generate/download invoice PDF:', error);
   }
 }

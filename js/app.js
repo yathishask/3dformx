@@ -635,14 +635,14 @@ function initPincodeChecker() {
         resultMsg.innerHTML = `
           <div class="p-2 mt-2 rounded bg-input border border-success-subtle text-success small">
             <i class="fa-solid fa-truck-fast me-1"></i> <strong>Express Delivery: Within 24-48 Hours</strong> to ${pin} via Bluedart Air Cargo.<br>
-            <span class="text-muted-dark">Cash on Delivery & 0% EMI Available.</span>
+            <span class="text-muted-dark">Secure Online Payment & 0% EMI Available.</span>
           </div>
         `;
       } else {
         resultMsg.innerHTML = `
           <div class="p-2 mt-2 rounded bg-input border border-secondary text-white small">
             <i class="fa-solid fa-truck-fast text-orange me-1"></i> <strong>Standard Delivery: 3-4 Business Days</strong> to ${pin} via Delhivery Express.<br>
-            <span class="text-muted-dark">Prepaid & COD options active.</span>
+            <span class="text-muted-dark">100% Secure Prepaid Payment via Razorpay.</span>
           </div>
         `;
       }

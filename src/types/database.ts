@@ -91,6 +91,8 @@ export interface OrderRow {
   address_id: string | null;
   status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
   payment_status: 'pending' | 'paid' | 'failed';
+  payment_id?: string | null;
+  payment_method?: string | null;
   subtotal: number;
   shipping_fee: number;
   total_amount: number;
