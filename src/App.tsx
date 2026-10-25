@@ -13,6 +13,7 @@ import { AddressPage } from './pages/AddressPage';
 import { CheckoutPage } from './pages/CheckoutPage';
 import { OrdersPage } from './pages/OrdersPage';
 import { AboutPage } from './pages/AboutPage';
+import { ResetPasswordPage } from './pages/ResetPasswordPage';
 
 // Scroll to top on route change
 function ScrollToTop() {
@@ -51,6 +52,7 @@ export const App: React.FC = () => {
           <Route path="/checkout" element={<CheckoutPage />} />
           <Route path="/orders" element={<OrdersPage />} />
           <Route path="/about" element={<AboutPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
           {/* Fallback route */}
           <Route path="*" element={<ShopPage />} />
         </Routes>

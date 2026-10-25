@@ -11,10 +11,13 @@ interface AuthContextType {
   isAuthModalOpen: boolean;
   openAuthModal: () => void;
   closeAuthModal: () => void;
-  signInWithIdentifier: (identifier: string, password: string) => Promise<{ error: string | null }>;
-  signInWithEmail: (identifier: string, password: string) => Promise<{ error: string | null }>;
-  signUpWithEmail: (email: string, password: string, fullName: string, phone: string) => Promise<{ error: string | null }>;
+  signInWithIdentifier: (identifier: string, password: string) => Promise<{ error: string | null; isEmailNotConfirmed?: boolean; email?: string }>;
+  signInWithEmail: (identifier: string, password: string) => Promise<{ error: string | null; isEmailNotConfirmed?: boolean; email?: string }>;
+  signUpWithEmail: (email: string, password: string, fullName: string, phone: string) => Promise<{ error: string | null; needsEmailConfirmation?: boolean }>;
   signOut: () => Promise<void>;
+  sendPasswordResetEmail: (email: string) => Promise<{ error: string | null }>;
+  resendConfirmationEmail: (email: string) => Promise<{ error: string | null }>;
+  updateUserPassword: (password: string) => Promise<{ error: string | null }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -122,7 +125,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
 
       if (signInError) {
-        return { error: signInError.message };
+        const isNotConfirmed =
+          signInError.message.toLowerCase().includes('email not confirmed') ||
+          signInError.message.toLowerCase().includes('not confirmed') ||
+          signInError.message.toLowerCase().includes('unconfirmed');
+        return {
+          error: signInError.message,
+          isEmailNotConfirmed: isNotConfirmed,
+          email: targetEmail,
+        };
       }
 
       return { error: null };
@@ -139,7 +150,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { error: 'A valid 10-digit mobile phone number is mandatory for registration' };
       }
 
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email: email.trim(),
         password,
         options: {
@@ -147,11 +158,85 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             full_name: fullName.trim(),
             phone: cleanedPhone,
           },
+          emailRedirectTo: `${window.location.origin}/`,
         },
       });
-      return { error: error ? error.message : null };
+
+      if (error) {
+        return { error: error.message };
+      }
+
+      // In Supabase, if session is null or identities exist with unconfirmed status, email confirmation is required
+      const needsEmailConfirmation = !data.session;
+
+      return {
+        error: null,
+        needsEmailConfirmation: needsEmailConfirmation || true, // Always inform the user to confirm their email
+      };
     } catch (err: any) {
       return { error: err.message || 'Failed to create account' };
+    }
+  };
+
+  const sendPasswordResetEmail = async (email: string) => {
+    try {
+      const trimmed = email.trim();
+      if (!trimmed || !trimmed.includes('@')) {
+        return { error: 'Please enter a valid email address.' };
+      }
+
+      const { error } = await supabase.auth.resetPasswordForEmail(trimmed, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+
+      if (error) {
+        return { error: error.message };
+      }
+
+      return { error: null };
+    } catch (err: any) {
+      return { error: err.message || 'Failed to send password reset email.' };
+    }
+  };
+
+  const resendConfirmationEmail = async (email: string) => {
+    try {
+      const trimmed = email.trim();
+      if (!trimmed || !trimmed.includes('@')) {
+        return { error: 'Please enter a valid email address.' };
+      }
+
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: trimmed,
+        options: {
+          emailRedirectTo: `${window.location.origin}/`,
+        },
+      });
+
+      if (error) {
+        return { error: error.message };
+      }
+
+      return { error: null };
+    } catch (err: any) {
+      return { error: err.message || 'Failed to resend confirmation email.' };
+    }
+  };
+
+  const updateUserPassword = async (password: string) => {
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password,
+      });
+
+      if (error) {
+        return { error: error.message };
+      }
+
+      return { error: null };
+    } catch (err: any) {
+      return { error: err.message || 'Failed to update password.' };
     }
   };
 
@@ -176,6 +261,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         signInWithEmail: signInWithIdentifier, // backward compatibility
         signUpWithEmail,
         signOut,
+        sendPasswordResetEmail,
+        resendConfirmationEmail,
+        updateUserPassword,
       }}
     >
       {children}

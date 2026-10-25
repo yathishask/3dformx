@@ -9,6 +9,7 @@ import {
   ArrowLeft,
   CheckCircle2,
   IndianRupee,
+  ChevronDown,
 } from 'lucide-react';
 import { ProductCard } from '../components/common/ProductCard';
 import { Product } from '../types';
@@ -242,11 +243,11 @@ export const ShopPage: React.FC = () => {
         </div>
 
         {/* Controls Panel: Search Bar, Sort Dropdown, Price Filter, In-Stock Filter, Category Pills */}
-        <div className="bg-dark-900 border border-slate-800 rounded-2xl p-4 sm:p-6 mb-8 shadow-xl">
-          {/* Top Row: Search Bar + Price Filter + In-Stock Toggle + Sort By */}
-          <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
+        <div className="bg-dark-900 border border-slate-800 rounded-2xl p-3.5 sm:p-5 mb-8 shadow-xl">
+          {/* Top Row: Search Input + Filter Controls */}
+          <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 sm:gap-4">
             {/* Search Input */}
-            <div className="relative flex-1 max-w-lg">
+            <div className="relative flex-1 lg:max-w-md">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-brand-orange" />
               <input
                 type="text"
@@ -257,12 +258,12 @@ export const ShopPage: React.FC = () => {
                     ? `Search in ${activeCategoryMeta.name}...`
                     : 'Search products by name, category, keywords...'
                 }
-                className="w-full pl-10 pr-9 py-2.5 rounded-xl bg-dark-850 border border-slate-700/80 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-brand-orange transition-colors"
+                className="w-full pl-10 pr-9 py-2.5 rounded-xl bg-dark-850 border border-slate-700/80 text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-brand-orange transition-colors"
               />
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-0.5"
                   aria-label="Clear search"
                 >
                   <X size={15} />
@@ -270,87 +271,105 @@ export const ShopPage: React.FC = () => {
               )}
             </div>
 
-            {/* Right Controls: Price Filter, In-Stock Toggle & Sort Dropdown */}
-            <div className="flex flex-wrap items-center gap-3">
-              {/* Price Filter */}
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-semibold text-slate-400 flex items-center gap-1 flex-shrink-0">
-                  <IndianRupee size={13} className="text-brand-orange" /> Price:
-                </span>
+            {/* Filter Controls: Clean 2-column grid on mobile, inline flex on desktop */}
+            <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 sm:gap-3">
+              {/* Price Filter Dropdown */}
+              <div className="relative col-span-1">
+                <div className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-brand-orange">
+                  <IndianRupee size={13} />
+                </div>
                 <select
                   value={priceFilter}
                   onChange={(e) => setPriceFilter(e.target.value as PriceFilterOption)}
-                  className="px-3 py-2.5 rounded-xl bg-dark-850 border border-slate-700/80 text-xs font-medium text-white focus:outline-none focus:border-brand-orange cursor-pointer"
+                  aria-label="Filter by price"
+                  className="w-full sm:w-auto appearance-none pl-7 pr-8 py-2.5 rounded-xl bg-dark-850 border border-slate-700/80 text-xs font-semibold text-white focus:outline-none focus:border-brand-orange cursor-pointer transition-colors"
                 >
                   <option value="all">All Prices</option>
                   <option value="under-1000">Under ₹1,000</option>
                   <option value="1000-10000">₹1,000 – ₹10,000</option>
                   <option value="above-10000">Above ₹10,000</option>
                 </select>
+                <ChevronDown size={14} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
               </div>
 
-              {/* In-Stock Toggle */}
-              <button
-                type="button"
-                onClick={() => setInStockOnly((prev) => !prev)}
-                className={`px-3.5 py-2.5 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition-all ${
-                  inStockOnly
-                    ? 'bg-brand-orange/15 border-brand-orange text-brand-orange'
-                    : 'bg-dark-850 border-slate-700/80 text-slate-300 hover:text-white'
-                }`}
-              >
-                <CheckCircle2 size={14} />
-                <span>In Stock Only</span>
-              </button>
-
-              {/* Sort Options */}
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-semibold text-slate-400 flex items-center gap-1 flex-shrink-0">
-                  <ArrowUpDown size={13} className="text-brand-orange" /> Sort:
-                </span>
+              {/* Sort Options Dropdown */}
+              <div className="relative col-span-1">
+                <div className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-brand-orange">
+                  <ArrowUpDown size={13} />
+                </div>
                 <select
                   value={sortBy}
                   onChange={(e) => handleSortChange(e.target.value as SortOption)}
-                  className="px-3.5 py-2.5 rounded-xl bg-dark-850 border border-slate-700/80 text-xs font-medium text-white focus:outline-none focus:border-brand-orange cursor-pointer"
+                  aria-label="Sort products by"
+                  className="w-full sm:w-auto appearance-none pl-7 pr-8 py-2.5 rounded-xl bg-dark-850 border border-slate-700/80 text-xs font-semibold text-white focus:outline-none focus:border-brand-orange cursor-pointer transition-colors"
                 >
                   <option value="popular">Most Popular</option>
-                  <option value="latest">Latest Collection (Newest)</option>
+                  <option value="latest">Latest Arrivals</option>
                   <option value="price-low">Price: Low to High</option>
                   <option value="price-high">Price: High to Low</option>
-                  <option value="rating">Highest Rated</option>
+                  <option value="rating">Top Rated</option>
                 </select>
+                <ChevronDown size={14} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
               </div>
+
+              {/* In-Stock Toggle Button */}
+              <button
+                type="button"
+                onClick={() => setInStockOnly((prev) => !prev)}
+                className={`col-span-2 sm:col-span-1 w-full sm:w-auto px-3.5 py-2.5 rounded-xl border text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
+                  inStockOnly
+                    ? 'bg-brand-orange/15 border-brand-orange text-brand-orange font-bold'
+                    : 'bg-dark-850 border-slate-700/80 text-slate-300 hover:text-white'
+                }`}
+              >
+                <CheckCircle2 size={14} className={inStockOnly ? 'text-brand-orange' : 'text-slate-500'} />
+                <span>In Stock Only</span>
+                {inStockOnly && (
+                  <span className="text-[10px] bg-brand-orange text-black font-extrabold px-1.5 py-0.2 rounded-full">
+                    Active
+                  </span>
+                )}
+              </button>
             </div>
           </div>
 
-          {/* Category Filter Pills */}
-          <div className="mt-5 pt-5 border-t border-slate-800/80 flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-            <span className="text-xs font-semibold text-slate-400 flex items-center gap-1.5 mr-2 flex-shrink-0">
-              <SlidersHorizontal size={14} className="text-brand-orange" /> Category:
-            </span>
-            {categoryTabs.map((cat) => {
-              const active = selectedCategory === cat.id;
-              return (
-                <button
-                  key={cat.id}
-                  onClick={() => handleCategoryChange(cat.id)}
-                  className={`px-4 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 ${
-                    active
-                      ? 'bg-brand-orange text-black font-extrabold shadow-md shadow-brand-orange/20'
-                      : 'bg-dark-800 text-slate-300 hover:text-white hover:bg-dark-750 border border-slate-700/60'
-                  }`}
-                >
-                  <span>{cat.label}</span>
-                  <span
-                    className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
-                      active ? 'bg-black/25 text-black' : 'bg-dark-950 text-slate-400'
+          {/* Category Filter Pills Row */}
+          <div className="mt-4 pt-4 border-t border-slate-800/80">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-semibold text-slate-400 flex items-center gap-1.5 flex-shrink-0">
+                <SlidersHorizontal size={13} className="text-brand-orange" />
+                <span>Categories</span>
+              </span>
+              <span className="text-[10px] text-slate-500 sm:hidden">
+                Swipe for more →
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar touch-pan-x">
+              {categoryTabs.map((cat) => {
+                const active = selectedCategory === cat.id;
+                return (
+                  <button
+                    key={cat.id}
+                    onClick={() => handleCategoryChange(cat.id)}
+                    className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 flex-shrink-0 ${
+                      active
+                        ? 'bg-brand-orange text-black font-extrabold shadow-md shadow-brand-orange/20'
+                        : 'bg-dark-800 text-slate-300 hover:text-white hover:bg-dark-750 border border-slate-700/60'
                     }`}
                   >
-                    {cat.count}
-                  </span>
-                </button>
-              );
-            })}
+                    <span>{cat.label}</span>
+                    <span
+                      className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+                        active ? 'bg-black/25 text-black' : 'bg-dark-950 text-slate-400'
+                      }`}
+                    >
+                      {cat.count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
 
